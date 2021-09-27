@@ -1,4 +1,3 @@
-from bs4 import BeautifulSoup
 import configparser
 import Scrape_categories as scrapper
 
@@ -58,7 +57,10 @@ if __name__ == '__main__':
                 else:
                     print("Skipping clearance category.")
         else:
-            main_cat = page_obj.find("li", attrs={"data-test-id": "breadcrumbs-list-crumb-2"}).text.replace("\n", "").replace(",", "").replace('"', '').strip()
+            try:
+                main_cat = page_obj.find("li", attrs={"data-test-id": "breadcrumbs-list-crumb-2"}).text.replace("\n", "").replace(",", "").replace('"', '').strip()
+            except:
+                main_cat = page_obj.find("a", attrs={"data-test-id": "category-bread-crumb-1"}).text.replace("\n", "").replace(",", "").replace('"', '').strip()
             if "clearance" not in main_cat.lower():
                 scrapper.scrape_categories(main_cat, start_cat, start_url, CHROME_PATH, start_url, base_url)
             else:

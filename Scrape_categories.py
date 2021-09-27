@@ -36,9 +36,12 @@ def write_csv(main_cat, cat_name, cat_link, sub_cat_name, sub_cat_link, sub_sub_
         print(e)
     f.close()
 
-def scrape_product(main_cat, cat_name, cat_link, sub_cat_name, sub_cat_link, sub_sub_cat_name, sub_sub_cat_link, product_title, product_link, start_url):
+def scrape_product(driver, main_cat, cat_name, cat_link, sub_cat_name, sub_cat_link, sub_sub_cat_name, sub_sub_cat_link, product_title, product_link, start_url):
     try:
-        page_obj = get_html(product_link)
+        driver.get(product_link)
+        time.sleep(1)
+        page_obj = BeautifulSoup(driver.page_source, "lxml")
+        #page_obj = get_html(product_link)
         if page_obj is not None:
             product_price = page_obj.find("div", attrs={"data-test-id": "product-primary-price"}).text.strip().replace("\n", "").replace(",", "").replace('"', '').strip()
             product_details_section = page_obj.find("section", attrs={"class": "_2cf5ecfb _042bbf7f"})
@@ -69,8 +72,9 @@ def scrape_product(main_cat, cat_name, cat_link, sub_cat_name, sub_cat_link, sub
                     special_fields["mesh size"] = value
 
             try:
-                images_div = page_obj.findAll("div", attrs={"class": "slick-track"})[-1]
-                images_list = images_div.findAll("img", attrs={"data-test-id": "image"})
+                #images_div = page_obj.findAll("div", attrs={"class": "slick-list"})[-1]
+                images_div = page_obj.findAll("div", attrs={"class": "slick-list"})[0]
+                images_list = images_div.findAll("img")
                 list_images = []
                 for img in images_list:
                     list_images.append(img.attrs["src"])
@@ -93,12 +97,12 @@ def scrape_product(main_cat, cat_name, cat_link, sub_cat_name, sub_cat_link, sub
         print(e)
 
 
-def scrape_products_list(CHROME_PATH, start_url, base_url, main_cat, cat_name, cat_link, sub_cat_name, sub_cat_link, sub_sub_cat_name, sub_sub_cat_link, sub_sub_cat_exists):
-    link_to_go = ""
-    if sub_sub_cat_exists:
-        link_to_go = sub_sub_cat_link
-    else:
-        link_to_go = sub_cat_link
+def scrape_products_list(CHROME_PATH, start_url, base_url, main_cat, cat_name, cat_link, sub_cat_name, sub_cat_link, sub_sub_cat_name, sub_sub_cat_link, products_page_link):
+    link_to_go = products_page_link
+    # if sub_sub_cat_exists:
+    #     link_to_go = sub_sub_cat_link
+    # else:
+    #     link_to_go = sub_cat_link
     if link_to_go in already_found_url:
         print("Already scraped => " + link_to_go)
     else:
@@ -145,7 +149,7 @@ def scrape_products_list(CHROME_PATH, start_url, base_url, main_cat, cat_name, c
                     a_tag = product.find("a", attrs={"data-test-id": "product-panel-main-section"})
                     product_title = a_tag.find("p", attrs={"data-test-id": "productTitle"}).text.replace("\n", "").replace("\r", "").replace(",", "").replace('"', '').strip()
                     product_link = base_url + a_tag.attrs["href"]
-                    scrape_product(main_cat, cat_name, cat_link, sub_cat_name, sub_cat_link, sub_sub_cat_name, sub_sub_cat_link, product_title, product_link, start_url)
+                    scrape_product(driver, main_cat, cat_name, cat_link, sub_cat_name, sub_cat_link, sub_sub_cat_name, sub_sub_cat_link, product_title, product_link, start_url)
                 except Exception as e:
                     pass
         except Exception as e:
@@ -173,12 +177,12 @@ def scrape_sub_categories(main_cat, cat_name, cat_link, sub_cat_name, sub_cat_li
                     #sub_sub_cat_link = base_url + sub_sub_cat.attrs["href"]
                     sub_sub_cat_link = base_url + a_tag.attrs["href"]
                     print("Sub Sub Category = " + sub_sub_cat_name)
-                    scrape_products_list(CHROME_PATH, start_url, base_url, main_cat, cat_name, cat_link, sub_cat_name, sub_cat_link, sub_sub_cat_name, sub_sub_cat_link, True)
+                    scrape_products_list(CHROME_PATH, start_url, base_url, main_cat, cat_name, cat_link, sub_cat_name, sub_cat_link, sub_sub_cat_name, sub_sub_cat_link, sub_sub_cat_link)
                 except Exception as e:
                     pass
         except:
             print("Sub Sub Category = ")
-            scrape_products_list(CHROME_PATH, start_url, base_url, main_cat, cat_name, cat_link, sub_cat_name, sub_cat_link, "", "", False)
+            scrape_products_list(CHROME_PATH, start_url, base_url, main_cat, cat_name, cat_link, sub_cat_name, sub_cat_link, "", "", sub_cat_link)
 
 
 def scrape_categories(main_cat, cat_name, cat_url, CHROME_PATH, start_url, base_url):
@@ -191,17 +195,20 @@ def scrape_categories(main_cat, cat_name, cat_url, CHROME_PATH, start_url, base_
 
             ####
             sub_categories_list = page_obj.findAll("ul", attrs={"id": "side-navigation-menu-1"})[0].findAll("li")
+            for sub_cat in sub_categories_list:
+                try:
+                    a_tag = sub_cat.find("a")
+                    # sub_cat_name = sub_cat.find("div", attrs={"data-test-id": "category-tile-content"}).find("h3").text.replace("\n", "").replace("\r", "").replace(",", "").replace('"', '').strip()
+                    sub_cat_name = a_tag.text.replace("\n", "").replace("\r", "").replace(",", "").replace('"',
+                                                                                                           '').strip()
+                    # sub_cat_link = base_url + sub_cat.attrs["href"]
+                    sub_cat_link = base_url + a_tag.attrs["href"]
+                    print("Sub Category = " + sub_cat_name)
+                    scrape_sub_categories(main_cat, cat_name, cat_url, sub_cat_name, sub_cat_link, CHROME_PATH,
+                                          start_url, base_url)
+                except Exception as e:
+                    pass
         except:
-            sub_categories_list = []
-
-        for sub_cat in sub_categories_list:
-            try:
-                a_tag = sub_cat.find("a")
-                #sub_cat_name = sub_cat.find("div", attrs={"data-test-id": "category-tile-content"}).find("h3").text.replace("\n", "").replace("\r", "").replace(",", "").replace('"', '').strip()
-                sub_cat_name = a_tag.text.replace("\n", "").replace("\r", "").replace(",", "").replace('"', '').strip()
-                #sub_cat_link = base_url + sub_cat.attrs["href"]
-                sub_cat_link = base_url + a_tag.attrs["href"]
-                print("Sub Category = " + sub_cat_name)
-                scrape_sub_categories(main_cat, cat_name, cat_url, sub_cat_name, sub_cat_link, CHROME_PATH, start_url, base_url)
-            except Exception as e:
-                pass
+            print("Sub Sub Category = ")
+            scrape_products_list(CHROME_PATH, start_url, base_url, main_cat, cat_name, cat_url, "",
+                                 "", "", "", cat_url)
