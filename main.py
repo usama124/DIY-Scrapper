@@ -57,6 +57,7 @@ if __name__ == '__main__':
                 else:
                     print("Skipping clearance category.")
         else:
+            start_cat = start_cat.replace("\n", "").replace(",", "").replace('"', '').strip()
             try:
                 main_cat = page_obj.find("li", attrs={"data-test-id": "breadcrumbs-list-crumb-2"}).text.replace("\n", "").replace(",", "").replace('"', '').strip()
             except:
