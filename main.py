@@ -20,7 +20,7 @@ def confParser(section):
 
 def create_heading():
     f = open("Data/diy_products.csv", "w")
-    f.write('"Web-scraper-order", "Web-scraper-start-url", "External Category", "Main category", "Main category href", "Sub category", "Sub category href", "Sub Sub category", "Sub Sub category href", "Product href", "Title", "Price", "Weight", "Height", "Length", "Width", "Thickness", "Diameter", "Depth", "Mesh Size", "Product specification", "Product Information", "Product Features", "Image 1", "Image 2", "Image 3", "Image 4", "Image 5"\n')
+    f.write('"Web-scraper-order", "Web-scraper-start-url", "External Category", "Main category", "Main category href", "Sub category", "Sub category href", "Sub Sub category", "Sub Sub category href", "Product href", "Title", "Price", "Product Code", "Weight", "Height", "Length", "Width", "Thickness", "Diameter", "Depth", "Mesh Size", "Product specification", "Product Information", "Product Features", "Image 1", "Image 2", "Image 3", "Image 4", "Image 5"\n')
     f.close()
 
 

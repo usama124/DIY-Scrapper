@@ -4,6 +4,7 @@ from selenium.webdriver.chrome.options import Options
 
 import requests, time
 from bs4 import BeautifulSoup
+import DownloadImage as downloader
 
 
 already_found_url = []
@@ -31,7 +32,7 @@ def get_html(url):
 def write_csv(main_cat, cat_name, cat_link, sub_cat_name, sub_cat_link, sub_sub_cat_name, sub_sub_cat_link, product_title, product_link, product_price, list_images, spec_data, special_fields, product_info, product_feat, start_url):
     f = open("Data/diy_products.csv", "a", encoding="utf-8")
     try:
-        f.write('"", "'+start_url+'", "'+main_cat+'", "'+cat_name+'", "'+cat_link+'", "'+sub_cat_name+'", "'+sub_cat_link+'", "'+sub_sub_cat_name+'", "'+sub_sub_cat_link+'", "'+product_link+'", "'+product_title+'", "'+product_price+'", "'+special_fields.get("weight", "")+'", "'+special_fields.get("height", "")+'", "'+special_fields.get("length", "")+'", "'+special_fields.get("width", "")+'", "'+special_fields.get("thickness", "")+'", "'+special_fields.get("diameter", "")+'", "'+special_fields.get("depth", "")+'", "'+special_fields.get("mesh size", "")+'", "'+spec_data+'", "'+product_info+'", "'+product_feat+'", "'+list_images[0]+'", "'+list_images[1]+'", "'+list_images[2]+'", "'+list_images[3]+'", "'+list_images[4]+'"   \n')
+        f.write('"", "'+start_url+'", "'+main_cat+'", "'+cat_name+'", "'+cat_link+'", "'+sub_cat_name+'", "'+sub_cat_link+'", "'+sub_sub_cat_name+'", "'+sub_sub_cat_link+'", "'+product_link+'", "'+product_title+'", "'+product_price+'", "'+special_fields.get("code", "")+'", "'+special_fields.get("weight", "")+'", "'+special_fields.get("height", "")+'", "'+special_fields.get("length", "")+'", "'+special_fields.get("width", "")+'", "'+special_fields.get("thickness", "")+'", "'+special_fields.get("diameter", "")+'", "'+special_fields.get("depth", "")+'", "'+special_fields.get("mesh size", "")+'", "'+spec_data+'", "'+product_info+'", "'+product_feat+'", "'+list_images[0]+'", "'+list_images[1]+'", "'+list_images[2]+'", "'+list_images[3]+'", "'+list_images[4]+'"   \n')
     except Exception as e:
         print(e)
     f.close()
@@ -70,6 +71,8 @@ def scrape_product(driver, main_cat, cat_name, cat_link, sub_cat_name, sub_cat_l
                     special_fields["depth"] = value
                 elif "mesh size" in heading.lower():
                     special_fields["mesh size"] = value
+                elif "product code" in heading.lower():
+                    special_fields["code"] = value
 
             try:
                 #images_div = page_obj.findAll("div", attrs={"class": "slick-list"})[-1]
@@ -84,6 +87,15 @@ def scrape_product(driver, main_cat, cat_name, cat_link, sub_cat_name, sub_cat_l
             except Exception as e:
                 list_images = ["", "", "", "", ""]
 
+            list_images_names = []
+            for x in range(0, 5):
+                if list_images[x] is not "":
+                    file_name = special_fields["code"] + "_img_" + str(x)
+                    file_name = downloader.download_image(list_images[x], file_name)
+                    list_images_names.append(file_name)
+                else:
+                    list_images_names.append("")
+
             try:
                 product_details_div_text = product_details_div.text.strip()
                 product_info = product_details_div_text.lower().split("features and benefits")[0].replace(",", "").replace('"', '').strip()
@@ -92,7 +104,7 @@ def scrape_product(driver, main_cat, cat_name, cat_link, sub_cat_name, sub_cat_l
                 product_info = ""
                 product_feat = ""
             print("=> Scraped product = " + product_title)
-            write_csv(main_cat, cat_name, cat_link, sub_cat_name, sub_cat_link, sub_sub_cat_name, sub_sub_cat_link, product_title, product_link, product_price, list_images, spec_data, special_fields, product_info, product_feat, start_url)
+            write_csv(main_cat, cat_name, cat_link, sub_cat_name, sub_cat_link, sub_sub_cat_name, sub_sub_cat_link, product_title, product_link, product_price, list_images_names, spec_data, special_fields, product_info, product_feat, start_url)
     except Exception as e:
         print(e)
 
