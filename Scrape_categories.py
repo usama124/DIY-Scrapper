@@ -47,7 +47,8 @@ def scrape_product(driver, main_cat, cat_name, cat_link, sub_cat_name, sub_cat_l
             product_price = page_obj.find("div", attrs={"data-test-id": "product-primary-price"}).text.strip().replace("\n", "").replace(",", "").replace('"', '').strip()
             product_details_section = page_obj.find("section", attrs={"class": "_2cf5ecfb _042bbf7f"})
             product_details_section = product_details_section.find("div", attrs={"class": "fef30cae _5e7ce7a9 _461d0ef9 d4281212"})
-            product_details_div = product_details_section.find("div", attrs={"data-test-id": "ProductDescText"})
+            #product_details_div = product_details_section.find("div", attrs={"data-test-id": "ProductDescText"})
+            product_details_div = product_details_section.findAll("div", attrs={"class": "_7be6e5a0 _66dabd6a e0657c31"})[0]
             spec_table = product_details_section.find("table", attrs={"class": "f16ac490 eddf1b8e"}).find("tbody").findAll("tr")
             spec_data = ""
             special_fields = {}
@@ -97,9 +98,11 @@ def scrape_product(driver, main_cat, cat_name, cat_link, sub_cat_name, sub_cat_l
                     list_images_names.append("")
 
             try:
-                product_details_div_text = product_details_div.text.strip()
-                product_info = product_details_div_text.lower().split("features and benefits")[0].replace(",", "").replace('"', '').strip()
-                product_feat = product_details_div_text.lower().split("features and benefits")[-1].replace(",", "").replace('"', '').strip()
+                product_info = str(product_details_div).replace(",", "")
+                product_feat = ""
+                #product_details_div_text = product_details_div.text.strip()
+                #product_info = product_details_div_text.lower().split("features and benefits")[0].replace(",", "").replace('"', '').strip()
+                #product_feat = product_details_div_text.lower().split("features and benefits")[-1].replace(",", "").replace('"', '').strip()
             except:
                 product_info = ""
                 product_feat = ""

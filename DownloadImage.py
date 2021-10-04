@@ -12,7 +12,7 @@ def download_image(image_url, filename):
         if r.status_code == 200:
             # Set decode_content value to True, otherwise the downloaded image file's size will be zero.
             r.raw.decode_content = True
-            print(r.headers)
+            #print(r.headers)
             img_ext = r.headers["Content-Type"].split("/")[-1]
             filename = "images/" + filename + "." + img_ext
             # Open a local file with wb ( write binary ) permission.
