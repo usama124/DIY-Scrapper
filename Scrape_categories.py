@@ -2,7 +2,7 @@
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 
-import requests, time
+import requests, time, re
 from bs4 import BeautifulSoup
 import DownloadImage as downloader
 
@@ -29,33 +29,74 @@ def get_html(url):
     return page_obj
 
 
-def write_csv(main_cat, cat_name, cat_link, sub_cat_name, sub_cat_link, sub_sub_cat_name, sub_sub_cat_link, product_title, product_link, product_price, list_images, spec_data, special_fields, product_info, product_feat, start_url):
+def write_csv(main_cat, cat_name, cat_link, sub_cat_name, sub_cat_link, sub_sub_cat_name, sub_sub_cat_link, product_title, product_link, product_price, list_images, spec_table_html, special_fields, product_info, product_feat, start_url):
     f = open("Data/diy_products.csv", "a", encoding="utf-8")
     try:
-        f.write('"", "'+start_url+'", "'+main_cat+'", "'+cat_name+'", "'+cat_link+'", "'+sub_cat_name+'", "'+sub_cat_link+'", "'+sub_sub_cat_name+'", "'+sub_sub_cat_link+'", "'+product_link+'", "'+product_title+'", "'+product_price+'", "'+special_fields.get("code", "")+'", "'+special_fields.get("weight", "")+'", "'+special_fields.get("height", "")+'", "'+special_fields.get("length", "")+'", "'+special_fields.get("width", "")+'", "'+special_fields.get("thickness", "")+'", "'+special_fields.get("diameter", "")+'", "'+special_fields.get("depth", "")+'", "'+special_fields.get("mesh size", "")+'", "'+spec_data+'", "'+product_info+'", "'+product_feat+'", "'+list_images[0]+'", "'+list_images[1]+'", "'+list_images[2]+'", "'+list_images[3]+'", "'+list_images[4]+'"   \n')
+        f.write('"", "'+start_url+'", "'+main_cat+'", "'+cat_name+'", "'+cat_link+'", "'+sub_cat_name+'", "'+sub_cat_link+'", "'+sub_sub_cat_name+'", "'+sub_sub_cat_link+'", "'+product_link+'", "'+product_title+'", "'+product_price+'", "'+special_fields.get("code", "")+'", "'+special_fields.get("weight", "")+'", "'+special_fields.get("height", "")+'", "'+special_fields.get("length", "")+'", "'+special_fields.get("width", "")+'", "'+special_fields.get("thickness", "")+'", "'+special_fields.get("diameter", "")+'", "'+special_fields.get("depth", "")+'", "'+special_fields.get("mesh size", "")+'", "'+spec_table_html+'", "'+product_info+'", "'+product_feat+'", "'+list_images[0]+'", "'+list_images[1]+'", "'+list_images[2]+'", "'+list_images[3]+'", "'+list_images[4]+'"   \n')
     except Exception as e:
         print(e)
     f.close()
+
+def get_alphabets_unit(value):
+    only_alpha = ""
+    for char in value:
+        if char.isalpha():
+            only_alpha += char
+    return only_alpha
+
+def convert_to_standard_unit(value):
+    non_decimal = re.compile(r'[^\d.-]+')
+    unit = get_alphabets_unit(value).strip()
+    try:
+        if unit.lower() == "kg":
+            return value
+        elif unit.lower() == "cm":
+            return value
+        elif unit.lower() == "g":
+            value = non_decimal.sub('', value).strip()
+            if "." in value:
+                value = str(float(value) / 1000) + "kg"
+            else:
+                value = str(int(value) / 1000) + "kg"
+        elif unit.lower() == "mm":
+            value = non_decimal.sub('', value).strip()
+            if "." in value:
+                value = str(float(value) / 10) + "cm"
+            else:
+                value = str(int(value) / 10) + "cm"
+        elif unit.lower() == "m":
+            value = non_decimal.sub('', value).strip()
+            if "." in value:
+                value = str(float(value) * 100) + "cm"
+            else:
+                value = str(int(value) * 100) + "cm"
+    except Exception as e:
+        pass
+    return value
+
 
 def scrape_product(driver, main_cat, cat_name, cat_link, sub_cat_name, sub_cat_link, sub_sub_cat_name, sub_sub_cat_link, product_title, product_link, start_url):
     try:
         driver.get(product_link)
         time.sleep(1)
         page_obj = BeautifulSoup(driver.page_source, "lxml")
-        #page_obj = get_html(product_link)
         if page_obj is not None:
             product_price = page_obj.find("div", attrs={"data-test-id": "product-primary-price"}).text.strip().replace("\n", "").replace(",", "").replace('"', '').strip()
             product_details_section = page_obj.find("section", attrs={"class": "_2cf5ecfb _042bbf7f"})
             product_details_section = product_details_section.find("div", attrs={"class": "fef30cae _5e7ce7a9 _461d0ef9 d4281212"})
             #product_details_div = product_details_section.find("div", attrs={"data-test-id": "ProductDescText"})
-            product_details_div = product_details_section.findAll("div", attrs={"class": "_7be6e5a0 _66dabd6a e0657c31"})[0]
+            product_info_section = product_details_section.findAll("div", attrs={"class": "_7be6e5a0 _66dabd6a e0657c31"})
+            product_details_div = product_info_section[0]
             spec_table = product_details_section.find("table", attrs={"class": "f16ac490 eddf1b8e"}).find("tbody").findAll("tr")
-            spec_data = ""
+            spec_table_html = str(product_info_section[-1])
             special_fields = {}
             for data in spec_table:
                 heading = data.find("th").text.replace("\n", "").replace(",", "").replace('"', '').replace("|", "").replace("#", "").strip()
-                value = data.find("td").text.replace("\n", "").replace(",", "").replace('"', '').replace("|", "").replace("#", "").strip()
-                spec_data = spec_data + heading + "#" + value + "|"
+                val = data.find("td").text.replace("\n", "").replace(",", "").replace('"', '').replace("|", "").replace("#", "").strip()
+                print(heading + " => " + val)
+                value = convert_to_standard_unit(val)
+                if val != value:
+                    spec_table_html = spec_table_html.replace(val, value)
                 if "height" in heading.lower():
                     special_fields["height"] = value
                 elif "length" in heading.lower():
@@ -74,6 +115,8 @@ def scrape_product(driver, main_cat, cat_name, cat_link, sub_cat_name, sub_cat_l
                     special_fields["mesh size"] = value
                 elif "product code" in heading.lower():
                     special_fields["code"] = value
+
+            spec_table_html = spec_table_html.replace(",", "")
 
             try:
                 #images_div = page_obj.findAll("div", attrs={"class": "slick-list"})[-1]
@@ -98,26 +141,23 @@ def scrape_product(driver, main_cat, cat_name, cat_link, sub_cat_name, sub_cat_l
                     list_images_names.append("")
 
             try:
+                try:
+                    product_details_div.find("button").decompose()
+                except:
+                    pass
                 product_info = str(product_details_div).replace(",", "")
                 product_feat = ""
-                #product_details_div_text = product_details_div.text.strip()
-                #product_info = product_details_div_text.lower().split("features and benefits")[0].replace(",", "").replace('"', '').strip()
-                #product_feat = product_details_div_text.lower().split("features and benefits")[-1].replace(",", "").replace('"', '').strip()
             except:
                 product_info = ""
                 product_feat = ""
             print("=> Scraped product = " + product_title)
-            write_csv(main_cat, cat_name, cat_link, sub_cat_name, sub_cat_link, sub_sub_cat_name, sub_sub_cat_link, product_title, product_link, product_price, list_images_names, spec_data, special_fields, product_info, product_feat, start_url)
+            write_csv(main_cat, cat_name, cat_link, sub_cat_name, sub_cat_link, sub_sub_cat_name, sub_sub_cat_link, product_title, product_link, product_price, list_images_names, spec_table_html, special_fields, product_info, product_feat, start_url)
     except Exception as e:
         print(e)
 
 
 def scrape_products_list(CHROME_PATH, start_url, base_url, main_cat, cat_name, cat_link, sub_cat_name, sub_cat_link, sub_sub_cat_name, sub_sub_cat_link, products_page_link):
     link_to_go = products_page_link
-    # if sub_sub_cat_exists:
-    #     link_to_go = sub_sub_cat_link
-    # else:
-    #     link_to_go = sub_cat_link
     if link_to_go in already_found_url:
         print("Already scraped => " + link_to_go)
     else:
