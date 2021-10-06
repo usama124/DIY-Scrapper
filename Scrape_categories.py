@@ -73,7 +73,7 @@ def increase_price_15_percent(price):
     price = price.replace("£", "").strip()
     price = float(price)
     price = price + (price * 0.15)
-    return str(price) + "£"
+    return "£" + str(price)
 
 
 def scrape_product(driver, main_cat, cat_name, cat_link, sub_cat_name, sub_cat_link, sub_sub_cat_name, sub_sub_cat_link, product_title, product_link, start_url):
