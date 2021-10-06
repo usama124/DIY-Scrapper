@@ -1,5 +1,6 @@
 import configparser
 import Scrape_categories as scrapper
+import ExcelOperations as EO
 
 parser = configparser.ConfigParser()
 parser.read("Conf/config.ini")
@@ -18,12 +19,6 @@ def confParser(section):
     return tmp_dict
 
 
-def create_heading():
-    f = open("Data/diy_products.csv", "w")
-    f.write('"Web-scraper-order", "Web-scraper-start-url", "External Category", "Main category", "Main category href", "Sub category", "Sub category href", "Sub Sub category", "Sub Sub category href", "Product href", "Title", "Price", "Product Code", "Weight", "Height", "Length", "Width", "Thickness", "Diameter", "Depth", "Mesh Size", "Product specification", "Product Information", "Product Features", "Image 1", "Image 2", "Image 3", "Image 4", "Image 5"\n')
-    f.close()
-
-
 general_conf = confParser("general_conf")
 CHROME_PATH = general_conf["chrome_path"].decode("utf-8")
 base_url = general_conf["base_url"].decode("utf-8")
@@ -31,7 +26,7 @@ start_url = general_conf["start_url"].decode("utf-8")
 start_cat = general_conf["start_cat"].decode("utf-8")
 
 if __name__ == '__main__':
-    create_heading()
+    EO.create_heading()
     if start_url.endswith("/"):
         start_url = start_url[:-1]
 

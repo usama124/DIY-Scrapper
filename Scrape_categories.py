@@ -3,6 +3,7 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 
 import requests, time, re
+import ExcelOperations as EO
 from bs4 import BeautifulSoup
 import DownloadImage as downloader
 
@@ -29,20 +30,13 @@ def get_html(url):
     return page_obj
 
 
-def write_csv(main_cat, cat_name, cat_link, sub_cat_name, sub_cat_link, sub_sub_cat_name, sub_sub_cat_link, product_title, product_link, product_price, list_images, spec_table_html, special_fields, product_info, product_feat, start_url):
-    f = open("Data/diy_products.csv", "a", encoding="utf-8")
-    try:
-        f.write('"", "'+start_url+'", "'+main_cat+'", "'+cat_name+'", "'+cat_link+'", "'+sub_cat_name+'", "'+sub_cat_link+'", "'+sub_sub_cat_name+'", "'+sub_sub_cat_link+'", "'+product_link+'", "'+product_title+'", "'+product_price+'", "'+special_fields.get("code", "")+'", "'+special_fields.get("weight", "")+'", "'+special_fields.get("height", "")+'", "'+special_fields.get("length", "")+'", "'+special_fields.get("width", "")+'", "'+special_fields.get("thickness", "")+'", "'+special_fields.get("diameter", "")+'", "'+special_fields.get("depth", "")+'", "'+special_fields.get("mesh size", "")+'", "'+spec_table_html+'", "'+product_info+'", "'+product_feat+'", "'+list_images[0]+'", "'+list_images[1]+'", "'+list_images[2]+'", "'+list_images[3]+'", "'+list_images[4]+'"   \n')
-    except Exception as e:
-        print(e)
-    f.close()
-
 def get_alphabets_unit(value):
     only_alpha = ""
     for char in value:
         if char.isalpha():
             only_alpha += char
     return only_alpha
+
 
 def convert_to_standard_unit(value):
     non_decimal = re.compile(r'[^\d.-]+')
@@ -75,6 +69,13 @@ def convert_to_standard_unit(value):
     return value
 
 
+def increase_price_15_percent(price):
+    price = price.replace("£", "").strip()
+    price = float(price)
+    price = price + (price * 0.15)
+    return str(price) + "£"
+
+
 def scrape_product(driver, main_cat, cat_name, cat_link, sub_cat_name, sub_cat_link, sub_sub_cat_name, sub_sub_cat_link, product_title, product_link, start_url):
     try:
         driver.get(product_link)
@@ -82,6 +83,7 @@ def scrape_product(driver, main_cat, cat_name, cat_link, sub_cat_name, sub_cat_l
         page_obj = BeautifulSoup(driver.page_source, "lxml")
         if page_obj is not None:
             product_price = page_obj.find("div", attrs={"data-test-id": "product-primary-price"}).text.strip().replace("\n", "").replace(",", "").replace('"', '').strip()
+            product_price = increase_price_15_percent(product_price)
             product_details_section = page_obj.find("section", attrs={"class": "_2cf5ecfb _042bbf7f"})
             product_details_section = product_details_section.find("div", attrs={"class": "fef30cae _5e7ce7a9 _461d0ef9 d4281212"})
             #product_details_div = product_details_section.find("div", attrs={"data-test-id": "ProductDescText"})
@@ -93,7 +95,6 @@ def scrape_product(driver, main_cat, cat_name, cat_link, sub_cat_name, sub_cat_l
             for data in spec_table:
                 heading = data.find("th").text.replace("\n", "").replace(",", "").replace('"', '').replace("|", "").replace("#", "").strip()
                 val = data.find("td").text.replace("\n", "").replace(",", "").replace('"', '').replace("|", "").replace("#", "").strip()
-                print(heading + " => " + val)
                 value = convert_to_standard_unit(val)
                 if val != value:
                     spec_table_html = spec_table_html.replace(val, value)
@@ -151,7 +152,7 @@ def scrape_product(driver, main_cat, cat_name, cat_link, sub_cat_name, sub_cat_l
                 product_info = ""
                 product_feat = ""
             print("=> Scraped product = " + product_title)
-            write_csv(main_cat, cat_name, cat_link, sub_cat_name, sub_cat_link, sub_sub_cat_name, sub_sub_cat_link, product_title, product_link, product_price, list_images_names, spec_table_html, special_fields, product_info, product_feat, start_url)
+            EO.write_excel_file(main_cat, cat_name, sub_cat_name, sub_sub_cat_name, product_title, product_price, list_images_names, spec_table_html, special_fields, product_info)
     except Exception as e:
         print(e)
 
